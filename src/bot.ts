@@ -11,11 +11,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ===== 配置区域 =====
-const VERIFIED_ROLE_ID = '1501783997158658118';        // ✅ 更新
-const MEMBER_ROLE_ID = '764338066663145492';            // ✅ 新增
-const LOG_CHANNEL_ID = '1504051824066302043';           // ✅ 更新
-const THREAD_CHANNEL_ID = '1503243901668950016';        // ✅ 更新
-const ADMIN_USER_ID = '619432932796530689';             // ✅ 更新
+const VERIFIED_ROLE_ID = '1501783997158658118';
+const MEMBER_ROLE_ID = '764338066663145492';
+const LOG_CHANNEL_ID = '1504051824066302043';
+const THREAD_CHANNEL_ID = '1503243901668950016';
+const ADMIN_USER_ID = '619432932796530689';
 const TARGET_INVITE_CODE = 'qpn4Q3tBvE';
 const INVITE_REWARD_ROLE_ID = '1503238678418296882';
 // const BIRTHDAY_CHANNEL_ID = '1494158013446094898';
@@ -37,8 +37,6 @@ const client = new Client({
 const invitesCache = new Collection<string, Collection<string, number>>();
 
 const commands = [
-  // ✅ 删除 /events 指令
-
   new SlashCommandBuilder()
     .setName('verify')
     .setDescription('Start the verification process to claim extra rewards'),
@@ -286,22 +284,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (result.status === 'success') {
         const vipLevel = result.vipLevel || '';
 
+        // ✅ 更新：admin → GM
         await interaction.editReply(
-          'Your info has been verified! ✅ Please wait patiently, admin will send you the gift code soon.'
+          'Your info has been verified! ✅ Please wait patiently, GM will send you the gift code soon.'
         );
 
-        // ✅ 分配 verified role
+        // ✅ 分配 verified role，记录结果
+        let verifiedRoleSuccess = false;
         try {
           const member = await guild?.members.fetch(user.id);
           const role = guild?.roles.cache.get(VERIFIED_ROLE_ID);
-          if (member && role) await member.roles.add(role);
+          if (member && role) {
+            await member.roles.add(role);
+            verifiedRoleSuccess = true;
+          }
         } catch (error) { console.error('❌ Error assigning verified role:', error); }
 
-        // ✅ 新增：分配 member role
+        // ✅ 分配 member role，记录结果
+        let memberRoleSuccess = false;
         try {
           const member = await guild?.members.fetch(user.id);
           const memberRole = guild?.roles.cache.get(MEMBER_ROLE_ID);
-          if (member && memberRole) await member.roles.add(memberRole);
+          if (member && memberRole) {
+            await member.roles.add(memberRole);
+            memberRoleSuccess = true;
+          }
         } catch (error) { console.error('❌ Error assigning member role:', error); }
 
         // ✅ 移除 wait role
@@ -311,7 +318,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           if (member && waitRole) await member.roles.remove(waitRole);
         } catch (error) { console.error('❌ Error removing wait role:', error); }
 
-        // ✅ 推送验证记录到 Log 频道
+        // ✅ 推送验证记录到 Log 频道，包含 role 分配结果
         try {
           const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
           if (logChannel?.isTextBased() && !logChannel.isDMBased()) {
@@ -323,7 +330,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 { name: 'VIP Level', value: vipLevel || 'N/A', inline: true },
                 { name: 'Game Info', value: gameInfo },
                 { name: 'Email Info', value: emailInfo },
-                { name: 'Submitted At', value: new Date().toISOString(), inline: true }
+                { name: 'Submitted At', value: new Date().toISOString(), inline: true },
+                // ✅ 新增：role 分配状态
+                { name: 'Verified Role', value: verifiedRoleSuccess ? '✅ Assigned' : '❌ Failed', inline: true },
+                { name: 'Member Role', value: memberRoleSuccess ? '✅ Assigned' : '❌ Failed', inline: true },
               );
             // @ts-ignore
             await logChannel.send({ embeds: [logEmbed] });
@@ -343,22 +353,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
             });
             await thread.members.add(user.id);
             await thread.members.add(ADMIN_USER_ID);
+            // ✅ 更新：admin → GM
             await thread.send(
-              `<@${user.id}> your info has been verified, pls wait patiently, admin will send you the giftcode soon`
+              `<@${user.id}> your info has been verified, pls wait patiently, GM will send you the giftcode soon`
             );
           }
         } catch (error) { console.error('❌ Error creating thread:', error); }
 
       } else {
+        // ✅ 更新：admin → GM
         await interaction.editReply(
-          'Something went wrong during verification. Please contact an admin for assistance.'
+          'Something went wrong during verification. Please contact GM for assistance.'
         );
       }
 
     } catch (error) {
       console.error('❌ Error handling verification:', error);
+      // ✅ 更新：admin → GM
       await interaction.editReply(
-        'Verification failed due to a system error. Please try again later or contact an admin.'
+        'Verification failed due to a system error. Please try again later or contact GM.'
       );
     }
   }
