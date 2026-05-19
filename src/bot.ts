@@ -12,14 +12,13 @@ dotenv.config();
 
 // ===== 配置区域 =====
 const VERIFIED_ROLE_ID = '1419966562206748746';
-const MEMBER_ROLE_ID = '1419593778255368284';
 const LOG_CHANNEL_ID = '1494155222241509476';
 const THREAD_CHANNEL_ID = '1494158013446094898';
-const ADMIN_USER_ID = '1494158013446094898';
-const TARGET_INVITE_CODE = 'RFKR8eHqSx';
+const ADMIN_USER_ID = '766273325827620865';
+const TARGET_INVITE_CODE = 'ry7WFbDCwj';
 const INVITE_REWARD_ROLE_ID = '1494174141559865354';
-// const BIRTHDAY_CHANNEL_ID = '1494158013446094898';
-// const BIRTHDAY_LOG_CHANNEL_ID = '1496428931174105158';
+// const BIRTHDAY_CHANNEL_ID = '1494158013446094898';  // 暂时隐藏
+// const BIRTHDAY_LOG_CHANNEL_ID = '1496428931174105158'; // 暂时隐藏
 // ===================
 
 const client = new Client({
@@ -35,24 +34,31 @@ const client = new Client({
 });
 
 const invitesCache = new Collection<string, Collection<string, number>>();
+// const birthdayRegistered = new Map<string, boolean>(); // 暂时隐藏
 
 const commands = [
+  new SlashCommandBuilder()
+    .setName('events')
+    .setDescription('View hidden event locations')
+    .addSubcommand(sub => sub.setName('map').setDescription('Find the hidden map'))
+    .addSubcommand(sub => sub.setName('hub').setDescription('Find the hidden hub')),
+
   new SlashCommandBuilder()
     .setName('verify')
     .setDescription('Start the verification process to claim extra rewards'),
 
   new SlashCommandBuilder()
-    .setName('embed')
-    .setDescription('Create a custom embed message with a verify button (Admin Only)')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addStringOption(option => option.setName('title').setDescription('The title of the embed').setRequired(true))
-    .addStringOption(option => option.setName('description').setDescription('The main text of the embed').setRequired(true))
-    .addStringOption(option => option.setName('button_text').setDescription('The text displayed on the button').setRequired(true))
-    .addStringOption(option => 
-      option.setName('image_url')
-        .setDescription('URL of the guide image to display in the embed')
-        .setRequired(false)
-    ),
+  .setName('embed')
+  .setDescription('Create a custom embed message with a verify button (Admin Only)')
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .addStringOption(option => option.setName('title').setDescription('The title of the embed').setRequired(true))
+  .addStringOption(option => option.setName('description').setDescription('The main text of the embed').setRequired(true))
+  .addStringOption(option => option.setName('button_text').setDescription('The text displayed on the button').setRequired(true))
+  .addStringOption(option => 
+    option.setName('image_url')
+      .setDescription('URL of the guide image to display in the embed')
+      .setRequired(false)  // 可选，不填就没有图片
+  ),
 
   // ✅ birthday 指令暂时隐藏，需要时取消注释
   // new SlashCommandBuilder()
@@ -93,6 +99,7 @@ client.once(Events.ClientReady, async (c) => {
   }
 });
 
+// ✅ 邀请链接追踪，不变
 client.on(Events.GuildMemberAdd, async (member) => {
   try {
     const newInvites = await member.guild.invites.fetch();
@@ -112,6 +119,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
   }
 });
 
+// ✅ 验证表单，不变
 function createVerifyModal() {
   const modal = new ModalBuilder().setCustomId('verify_modal').setTitle('Player Verification');
   const gameInfoInput = new TextInputBuilder()
@@ -133,39 +141,47 @@ function createVerifyModal() {
 
 client.on(Events.InteractionCreate, async (interaction) => {
 
+  // ===== 斜杠指令 =====
   if (interaction.isChatInputCommand()) {
+
+    if (interaction.commandName === 'events') {
+      const sub = interaction.options.getSubcommand();
+      if (sub === 'map') await interaction.reply({ content: 'dear user, congratulations you found out the hidden map', ephemeral: true });
+      if (sub === 'hub') await interaction.reply({ content: 'dear user, congratulations you found out the hidden hub', ephemeral: true });
+    }
 
     if (interaction.commandName === 'verify') {
       await interaction.showModal(createVerifyModal());
     }
 
     if (interaction.commandName === 'embed') {
-      const title = interaction.options.getString('title')!;
-      const description = interaction.options.getString('description')!;
-      const buttonText = interaction.options.getString('button_text')!;
-      const imageUrl = interaction.options.getString('image_url');
+  const title = interaction.options.getString('title')!;
+  const description = interaction.options.getString('description')!;
+  const buttonText = interaction.options.getString('button_text')!;
+  const imageUrl = interaction.options.getString('image_url'); // 新增
 
-      const embed = new EmbedBuilder()
-        .setTitle(title)
-        .setDescription(description)
-        .setColor(0x0099FF);
+  const embed = new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(0x0099FF);
 
-      if (imageUrl) {
-        embed.setImage(imageUrl);
-      }
+  // ✅ 新增：如果有图片URL就加进去
+  if (imageUrl) {
+    embed.setImage(imageUrl);
+  }
 
-      const verifyButton = new ButtonBuilder()
-        .setCustomId('trigger_verify_modal')
-        .setLabel(buttonText)
-        .setStyle(ButtonStyle.Primary);
+  const verifyButton = new ButtonBuilder()
+    .setCustomId('trigger_verify_modal')
+    .setLabel(buttonText)
+    .setStyle(ButtonStyle.Primary);
 
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(verifyButton);
-      await interaction.reply({ embeds: [embed], components: [row] });
-    }
-
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(verifyButton);
+  await interaction.reply({ embeds: [embed], components: [row] });
+}
     // ✅ birthday 指令处理暂时隐藏，需要时取消注释
     // if (interaction.commandName === 'birthday') { ... }
 
+    // ✅ getcode 指令
     if (interaction.commandName === 'getcode') {
       await interaction.reply({ content: 'Fetching a gift code, please wait...', ephemeral: true });
       try {
@@ -182,8 +198,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
             action: 'admin_get_code',
             requestedBy: interaction.user.tag,
             requestedById: interaction.user.id,
-            channelId: interaction.channelId,
-            channelName: (interaction.channel as any)?.name || '',
+            channelId: interaction.channelId,                          // ✅ 新增
+            channelName: (interaction.channel as any)?.name || '',     // ✅ 新增
             timestamp: new Date().toISOString()
           }),
           signal: controller.signal
@@ -195,10 +211,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const result = (rawText ? JSON.parse(rawText) : {}) as { code?: string; message?: string };
 
         if (result.code) {
-          await interaction.editReply(
-            `✅ **Gift Code:**\n\`\`\`\n${result.code}\n\`\`\`\n📋 **Ready-to-send message** (copy and send to player):\n\`\`\`\n${result.message}\n\`\`\`\n⚠️ This code has been marked as **used**.`
-          );
-        } else {
+        await interaction.editReply(
+          `✅ **Gift Code:**\n\`\`\`\n${result.code}\n\`\`\`\n📋 **Ready-to-send message** (copy and send to player):\n\`\`\`\n${result.message}\n\`\`\`\n⚠️ This code has been marked as **used**.`
+        );
+      } else {
           await interaction.editReply(result.message || '❌ No unused codes available. Please add more codes to the sheet.');
         }
       } catch (error) {
@@ -208,17 +224,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
+  // ===== 按钮点击 =====
   if (interaction.isButton()) {
     if (interaction.customId === 'trigger_verify_modal') {
       await interaction.showModal(createVerifyModal());
     }
+
     // ✅ birthday 按钮处理暂时隐藏，需要时取消注释
     // if (interaction.customId === 'claim_birthday_gift') { ... }
   }
 
-  // ✅ Select Menu 暂时隐藏，需要时取消注释
+  // ===== Select Menu 暂时隐藏，需要时取消注释 =====
   // if (interaction.isStringSelectMenu()) { ... }
 
+  // ===== Modal 提交 =====
   if (interaction.isModalSubmit() && interaction.customId === 'verify_modal') {
     const gameInfo = interaction.fields.getTextInputValue('game_info');
     const emailInfo = interaction.fields.getTextInputValue('email_info');
@@ -258,67 +277,52 @@ client.on(Events.InteractionCreate, async (interaction) => {
       console.log('📦 n8n raw response:', rawText);
 
       const result = (rawText ? JSON.parse(rawText) : {}) as {
-        status?: string;
+        status?: string;    // 'already_verified' | 'uid_not_found' | 'no_reward' | 'success'
         vipLevel?: string;
       };
-
+      // ✅ UID 已验证过
       if (result.status === 'already_verified') {
         await interaction.editReply(
           'This UID has already been used for verification, please do not submit repeatedly.'
         );
         return;
       }
-
+      // ✅ 新增：UID 在VIP名单里找不到
       if (result.status === 'uid_not_found') {
         await interaction.editReply(
           'There seems to be some error with your info, please recheck your UID.'
         );
         return;
       }
-
+      // ✅ VIP 等级不足
       if (result.status === 'no_reward') {
         await interaction.editReply('No rewards available now.');
         return;
       }
 
+      // ✅ 验证通过
       if (result.status === 'success') {
         const vipLevel = result.vipLevel || '';
 
-        // ✅ 更新：admin → GM
         await interaction.editReply(
-          'Your info has been verified! ✅ Please wait patiently, GM will send you the gift code soon.'
+          'Your info has been verified! ✅ Please wait patiently, admin will send you the gift code soon.'
         );
 
-        // ✅ 分配 verified role，记录结果
-        let verifiedRoleSuccess = false;
+        // 分配 verified role
         try {
           const member = await guild?.members.fetch(user.id);
           const role = guild?.roles.cache.get(VERIFIED_ROLE_ID);
-          if (member && role) {
-            await member.roles.add(role);
-            verifiedRoleSuccess = true;
-          }
-        } catch (error) { console.error('❌ Error assigning verified role:', error); }
+          if (member && role) await member.roles.add(role);
+        } catch (error) { console.error('❌ Error assigning role:', error); }
 
-        // ✅ 分配 member role，记录结果
-        let memberRoleSuccess = false;
-        try {
-          const member = await guild?.members.fetch(user.id);
-          const memberRole = guild?.roles.cache.get(MEMBER_ROLE_ID);
-          if (member && memberRole) {
-            await member.roles.add(memberRole);
-            memberRoleSuccess = true;
-          }
-        } catch (error) { console.error('❌ Error assigning member role:', error); }
-
-        // ✅ 移除 wait role
+        // 移除 wait role
         try {
           const member = await guild?.members.fetch(user.id);
           const waitRole = guild?.roles.cache.get(INVITE_REWARD_ROLE_ID);
           if (member && waitRole) await member.roles.remove(waitRole);
         } catch (error) { console.error('❌ Error removing wait role:', error); }
 
-        // ✅ 推送验证记录到 Log 频道，包含 role 分配结果
+        // 推送验证记录到 Log 频道
         try {
           const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
           if (logChannel?.isTextBased() && !logChannel.isDMBased()) {
@@ -330,17 +334,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 { name: 'VIP Level', value: vipLevel || 'N/A', inline: true },
                 { name: 'Game Info', value: gameInfo },
                 { name: 'Email Info', value: emailInfo },
-                { name: 'Submitted At', value: new Date().toISOString(), inline: true },
-                // ✅ 新增：role 分配状态
-                { name: 'Verified Role', value: verifiedRoleSuccess ? '✅ Assigned' : '❌ Failed', inline: true },
-                { name: 'Member Role', value: memberRoleSuccess ? '✅ Assigned' : '❌ Failed', inline: true },
+                { name: 'Submitted At', value: new Date().toISOString(), inline: true }
               );
             // @ts-ignore
             await logChannel.send({ embeds: [logEmbed] });
           }
         } catch (error) { console.error('❌ Error sending log:', error); }
 
-        // ✅ 建立私密 Thread
+        // 建立私密 Thread，标题格式 [VIP等级] [游戏信息]
         try {
           const threadChannel = await client.channels.fetch(THREAD_CHANNEL_ID);
           if (threadChannel?.isTextBased() && !threadChannel.isDMBased() && 'threads' in threadChannel) {
@@ -353,30 +354,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
             });
             await thread.members.add(user.id);
             await thread.members.add(ADMIN_USER_ID);
-            // ✅ 更新：admin → GM
             await thread.send(
-              `<@${user.id}> your info has been verified, pls wait patiently, GM will send you the giftcode soon`
+              `<@${user.id}> your info has been verified, pls wait patiently, admin will send you the giftcode soon`
             );
           }
         } catch (error) { console.error('❌ Error creating thread:', error); }
 
       } else {
-        // ✅ 更新：admin → GM
         await interaction.editReply(
-          'Something went wrong during verification. Please contact GM for assistance.'
+          'Something went wrong during verification. Please contact an admin for assistance.'
         );
       }
 
     } catch (error) {
       console.error('❌ Error handling verification:', error);
-      // ✅ 更新：admin → GM
       await interaction.editReply(
-        'Verification failed due to a system error. Please try again later or contact GM.'
+        'Verification failed due to a system error. Please try again later or contact an admin.'
       );
     }
   }
 });
 
+// ✅ 私信和@提及，不变
 client.on(Events.MessageCreate, async (message: Message) => {
   if (message.author.bot) return;
 
