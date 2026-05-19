@@ -11,12 +11,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ===== 配置区域 =====
-const VERIFIED_ROLE_ID = '1419966562206748746';
-const LOG_CHANNEL_ID = '1494155222241509476';
-const THREAD_CHANNEL_ID = '1494158013446094898';
-const ADMIN_USER_ID = '766273325827620865';
-const TARGET_INVITE_CODE = 'ry7WFbDCwj';
-const INVITE_REWARD_ROLE_ID = '1494174141559865354';
+const VERIFIED_ROLE_ID = '1501783997158658118';
+const LOG_CHANNEL_ID = '1504051824066302043';
+const THREAD_CHANNEL_ID = '1503243901668950016';
+const ADMIN_USER_ID = '619432932796530689';
+const TARGET_INVITE_CODE = 'pn4Q3tBvE';
+const INVITE_REWARD_ROLE_ID = '1503238678418296882';
 // const BIRTHDAY_CHANNEL_ID = '1494158013446094898';  // 暂时隐藏
 // const BIRTHDAY_LOG_CHANNEL_ID = '1496428931174105158'; // 暂时隐藏
 // ===================
@@ -305,7 +305,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const vipLevel = result.vipLevel || '';
 
         await interaction.editReply(
-          'Your info has been verified! ✅ Please wait patiently, admin will send you the gift code soon.'
+          'Your info has been verified! ✅ Please wait patiently, GM will send you the gift code soon.'
         );
 
         // 分配 verified role
@@ -355,14 +355,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
             await thread.members.add(user.id);
             await thread.members.add(ADMIN_USER_ID);
             await thread.send(
-              `<@${user.id}> your info has been verified, pls wait patiently, admin will send you the giftcode soon`
+              `<@${user.id}> your info has been verified, pls wait patiently, GM will send you the giftcode soon`
             );
           }
         } catch (error) { console.error('❌ Error creating thread:', error); }
 
       } else {
         await interaction.editReply(
-          'Something went wrong during verification. Please contact an admin for assistance.'
+          'Something went wrong during verification. Please contact GM for assistance.'
         );
       }
 
