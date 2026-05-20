@@ -318,10 +318,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // 分配 verified role
         try {
           const targetGuild = await client.guilds.fetch(GUILD_ID);
-          const member = await targetGuild.members.fetch(user.id);
-          const role = targetGuild.roles.cache.get(VERIFIED_ROLE_ID);
-          if (member && role) {
-            await member.roles.add(role);
+          // 先从缓存取，取不到再 fetch（借鉴 Python bot 的双重保障）
+          let member = targetGuild.members.cache.get(user.id);
+          if (!member) member = await targetGuild.members.fetch(user.id);
+          
+          const role = await targetGuild.roles.fetch(VERIFIED_ROLE_ID);
+          if (member && role && !member.roles.cache.has(role.id)) {
+            await member.roles.add(role, 'Verification passed');
             verifiedRoleSuccess = true;
           }
         } catch (error) { console.error('❌ Error assigning verified role:', error); }
@@ -329,20 +332,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // 分配 member role
         try {
           const targetGuild = await client.guilds.fetch(GUILD_ID);
-          const member = await targetGuild.members.fetch(user.id);
-          const memberRole = targetGuild.roles.cache.get(MEMBER_ROLE_ID);
-          if (member && memberRole) {
-            await member.roles.add(memberRole);
+          let member = targetGuild.members.cache.get(user.id);
+          if (!member) member = await targetGuild.members.fetch(user.id);
+        
+          const memberRole = await targetGuild.roles.fetch(MEMBER_ROLE_ID);
+          if (member && memberRole && !member.roles.cache.has(memberRole.id)) {
+            await member.roles.add(memberRole, 'Verification passed');
             memberRoleSuccess = true;
           }
         } catch (error) { console.error('❌ Error assigning member role:', error); }
         
-       // 移除 wait role
+        // 移除 wait role
         try {
           const targetGuild = await client.guilds.fetch(GUILD_ID);
-          const member = await targetGuild.members.fetch(user.id);
-          const waitRole = targetGuild.roles.cache.get(INVITE_REWARD_ROLE_ID);
-          if (member && waitRole) await member.roles.remove(waitRole);
+          let member = targetGuild.members.cache.get(user.id);
+          if (!member) member = await targetGuild.members.fetch(user.id);
+        
+          const waitRole = await targetGuild.roles.fetch(INVITE_REWARD_ROLE_ID);
+          if (member && waitRole && member.roles.cache.has(waitRole.id)) {
+            await member.roles.remove(waitRole, 'Verification passed');
+          }
         } catch (error) { console.error('❌ Error removing wait role:', error); }
 
         // 推送验证记录到 Log 频道
@@ -365,6 +374,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         } catch (error) { console.error('❌ Error sending log:', error); }
 
         // 建立私密 Thread，标题格式 [VIP等级] [游戏信息]
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         try {
           const threadChannel = await client.channels.fetch(THREAD_CHANNEL_ID);
           if (threadChannel?.isTextBased() && !threadChannel.isDMBased() && 'threads' in threadChannel) {
