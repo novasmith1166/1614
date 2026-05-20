@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ===== 配置区域 =====
+const GUILD_ID = '689119252464009273';
 const VERIFIED_ROLE_ID = '1506480075946856618';
 const LOG_CHANNEL_ID = '1504051824066302043';
 const THREAD_CHANNEL_ID = '1503243901668950016';
@@ -311,14 +312,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // 分配 verified role
         try {
           const member = await guild?.members.fetch(user.id);
-          const role = guild?.roles.cache.get(VERIFIED_ROLE_ID);
-          if (member && role) await member.roles.add(role);
-        } catch (error) { console.error('❌ Error assigning role:', error); }
-
+          const role = await guild?.roles.fetch(VERIFIED_ROLE_ID);
+          if (member && role) {
+            await member.roles.add(role);
+            verifiedRoleSuccess = true;
+          }
+        } catch (error) { console.error('❌ Error assigning verified role:', error); }
+        
+        // 分配 member role
+        try {
+          const member = await guild?.members.fetch(user.id);
+          const memberRole = await guild?.roles.fetch(MEMBER_ROLE_ID);
+          if (member && memberRole) {
+            await member.roles.add(memberRole);
+            memberRoleSuccess = true;
+          }
+        } catch (error) { console.error('❌ Error assigning member role:', error); }
+        
         // 移除 wait role
         try {
           const member = await guild?.members.fetch(user.id);
-          const waitRole = guild?.roles.cache.get(INVITE_REWARD_ROLE_ID);
+          const waitRole = await guild?.roles.fetch(INVITE_REWARD_ROLE_ID);
           if (member && waitRole) await member.roles.remove(waitRole);
         } catch (error) { console.error('❌ Error removing wait role:', error); }
 
