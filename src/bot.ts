@@ -313,11 +313,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // ✅ 在这里声明两个变量
         let verifiedRoleSuccess = false;
         let memberRoleSuccess = false;
+      
         
         // 分配 verified role
         try {
-          const member = await guild?.members.fetch(user.id);
-          const role = await guild?.roles.fetch(VERIFIED_ROLE_ID);
+          const targetGuild = await client.guilds.fetch(GUILD_ID);
+          const member = await targetGuild.members.fetch(user.id);
+          const role = targetGuild.roles.cache.get(VERIFIED_ROLE_ID);
           if (member && role) {
             await member.roles.add(role);
             verifiedRoleSuccess = true;
@@ -326,18 +328,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
         
         // 分配 member role
         try {
-          const member = await guild?.members.fetch(user.id);
-          const memberRole = await guild?.roles.fetch(MEMBER_ROLE_ID);
+          const targetGuild = await client.guilds.fetch(GUILD_ID);
+          const member = await targetGuild.members.fetch(user.id);
+          const memberRole = targetGuild.roles.cache.get(MEMBER_ROLE_ID);
           if (member && memberRole) {
             await member.roles.add(memberRole);
             memberRoleSuccess = true;
           }
         } catch (error) { console.error('❌ Error assigning member role:', error); }
         
-        // 移除 wait role
+       // 移除 wait role
         try {
-          const member = await guild?.members.fetch(user.id);
-          const waitRole = await guild?.roles.fetch(INVITE_REWARD_ROLE_ID);
+          const targetGuild = await client.guilds.fetch(GUILD_ID);
+          const member = await targetGuild.members.fetch(user.id);
+          const waitRole = targetGuild.roles.cache.get(INVITE_REWARD_ROLE_ID);
           if (member && waitRole) await member.roles.remove(waitRole);
         } catch (error) { console.error('❌ Error removing wait role:', error); }
 
