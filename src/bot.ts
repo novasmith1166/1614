@@ -13,6 +13,7 @@ dotenv.config();
 // ===== 配置区域 =====
 const GUILD_ID = '689119252464009273';
 const VERIFIED_ROLE_ID = '1506480075946856618';
+const MEMBER_ROLE_ID = '764338066663145492';
 const LOG_CHANNEL_ID = '1504051824066302043';
 const THREAD_CHANNEL_ID = '1503243901668950016';
 const ADMIN_USER_ID = '619432932796530689';
@@ -304,11 +305,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // ✅ 验证通过
       if (result.status === 'success') {
         const vipLevel = result.vipLevel || '';
-
+      
         await interaction.editReply(
           'Your info has been verified! ✅ Please wait patiently, GM will send you the gift code soon.'
         );
-
+      
+        // ✅ 在这里声明两个变量
+        let verifiedRoleSuccess = false;
+        let memberRoleSuccess = false;
+        
         // 分配 verified role
         try {
           const member = await guild?.members.fetch(user.id);
