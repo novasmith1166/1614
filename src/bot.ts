@@ -16,7 +16,10 @@ const VERIFIED_ROLE_ID = '1506480075946856618';
 const MEMBER_ROLE_ID = '764338066663145492';
 const LOG_CHANNEL_ID = '1504051824066302043';
 const THREAD_CHANNEL_ID = '1503243901668950016';
-const ADMIN_USER_ID = '619432932796530689';
+const GM_USER_IDS = [
+  '762275104041992212',  // GM 1
+  '823846421488861204', // GM 2
+];
 const TARGET_INVITE_CODE = 'cQVMsasWtR';
 const INVITE_REWARD_ROLE_ID = '1506551337473540106';
 // const BIRTHDAY_CHANNEL_ID = '1494158013446094898';  // 暂时隐藏
@@ -39,12 +42,6 @@ const invitesCache = new Collection<string, Collection<string, number>>();
 // const birthdayRegistered = new Map<string, boolean>(); // 暂时隐藏
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName('events')
-    .setDescription('View hidden event locations')
-    .addSubcommand(sub => sub.setName('map').setDescription('Find the hidden map'))
-    .addSubcommand(sub => sub.setName('hub').setDescription('Find the hidden hub')),
-
   new SlashCommandBuilder()
     .setName('verify')
     .setDescription('Start the verification process to claim extra rewards'),
@@ -145,12 +142,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // ===== 斜杠指令 =====
   if (interaction.isChatInputCommand()) {
-
-    if (interaction.commandName === 'events') {
-      const sub = interaction.options.getSubcommand();
-      if (sub === 'map') await interaction.reply({ content: 'dear user, congratulations you found out the hidden map', ephemeral: true });
-      if (sub === 'hub') await interaction.reply({ content: 'dear user, congratulations you found out the hidden hub', ephemeral: true });
-    }
 
     if (interaction.commandName === 'verify') {
       await interaction.showModal(createVerifyModal());
@@ -387,7 +378,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
               invitable: false,
             });
             await thread.members.add(user.id);
-            await thread.members.add(ADMIN_USER_ID);
+            for (const gmId of GM_USER_IDS) {
+              await thread.members.add(gmId);
+            }
             await thread.send(
               `<@${user.id}> your info has been verified, pls wait patiently, GM will send you the giftcode soon`
             );
