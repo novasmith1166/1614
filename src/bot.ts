@@ -283,7 +283,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // ✅ 新增：UID 在VIP名单里找不到
       if (result.status === 'uid_not_found') {
         await interaction.editReply(
-          'Please claim the free VIP EXP from the daily quest menu, then try again.'
+          'Please log into the game and claim the free VIP EXP from the daily quest menu, then try again.'
         );
         return;
       }
